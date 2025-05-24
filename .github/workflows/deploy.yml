@@ -1,0 +1,62 @@
+name: Angular CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Matches Angular 17+ compatibility
+          cache: 'npm'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Run tests
+      - name: Run tests
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+        env:
+          CI: true
+
+      # Build the Angular app
+      - name: Build Angular app
+        run: npm run build -- --configuration production
+        env:
+          NODE_ENV: production
+
+      # Deploy to VPS via SSH
+      - name: Deploy to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          port: ${{ secrets.PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./dist/my-angular-app/*" # Adjust to match your Angular project name
+          target: "/var/www/my-angular-app"
+          rm: true # Remove existing files in target directory before copying
+          strip_components: 2 # Adjust based on dist folder structure (e.g., dist/my-angular-app/*)
+
+      # Restart Nginx
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          port: ${{ secrets.PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo systemctl reload nginx || { echo "Nginx reload failed"; exit 1; }
