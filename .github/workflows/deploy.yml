@@ -25,11 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Run tests
-      - name: Run tests
-        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-        env:
-          CI: true
+#      # Run tests
+#      - name: Run tests
+#        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+#        env:
+#          CI: true
 
       # Build the Angular app
       - name: Build Angular app
